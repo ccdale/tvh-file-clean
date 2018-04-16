@@ -25,6 +25,18 @@ function duration()
     ffprobe "$ifn" 2>&1 |sed -n '/[ \t]*Duration:.*/s/^[ \t]*Duration: \([0-9]\+:[0-9]\+:[0-9]\+\)\.[0-9]*,.*$/\1/p'
 }
 
+function hms()
+{
+    dur=$1
+    hrs=$(echo $dur|cut -d: -f1)
+    xsecs=$(( hrs * 3600 ))
+    mins=$(echo $dur|cut -d: -f2)
+    xsecs=$(( xsecs + ( mins * 60 ) ))
+    secs=$(echo $dur|cut -d: -f3)
+    xsecs=$(( xsecs + secs ))
+    echo $xsecs
+}
+
 workingdir=~/.tmpvid
 logdir=~/.logs
 [[ -d $workingdir ]] || mkdir $workingdir
@@ -70,15 +82,17 @@ if [[ -f "$m2v" && -f "$mp2" ]]; then
     mplex -f 9 -o "${op}" "$m2v" "$mp2" >>"$logfn" 2>&1
     if [[ -r "$op" ]]; then
         durmpg=$(duration "$op")
+        durmpgs=$(hms $durmpg)
         durifn=$(duration "$infn")
+        durifns=$(hms $durifn)
         echo "Cleaning of $infn completed" >>"$logfn"
-        echo "Duration input file: $durifn" >>"$logfn"
-        echo "Duration output file: $durmpg" >>"$logfn"
+        echo "Duration input file: $durifn ($durifns)" >>"$logfn"
+        echo "Duration output file: $durmpg ($durmpgs)" >>"$logfn"
         echo "copying cleaned file to tvheadend dir" >>"$logfn"
         cp "$op" "$infn"
         rm -rf $workdir
     else
-        echo "Mission output file $op" >>"$logfn"
+        echo "Missing output file $op" >>"$logfn"
         exit 1
     fi
 else
